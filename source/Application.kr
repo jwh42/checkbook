@@ -26,8 +26,8 @@ public static int Main(string[] args) {
 
 	c = new CheckBookApp();
 	
-	c.Width  = 780.0;
-	c.Height = 500.0;
+	c.Width  = 740.0;
+	c.Height = 580.0;
 	c.Name = "CheckBookApp";
 
 	w = Window.Create(

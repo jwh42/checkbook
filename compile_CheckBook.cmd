@@ -1,10 +1,10 @@
 @echo off
 
 REM varibles
-	REM SET KRFLAGS=-optimize
-	SET KRFLAGS=
+	SET KRFLAGS=-optimize
+	REM SET KRFLAGS=
 	SET EXENAME=CheckBook
-	SET MAKEOPTS=DEBUG=true SUBSYS=windows
+	SET MAKEOPTS=DEBUG=false SUBSYS=windows
 	SET OLDPATH=%PATH%
 	SET PATH=%PATH%;bin
 
