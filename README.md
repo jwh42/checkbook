@@ -1,4 +1,4 @@
-ABOUT KRYPTON COMPILER
+About Krypton Compiler
 ----------------------
    Krypton is a language, compiler, and set of runtime libraries that I
    developed in my spare time. My goal was to create my own language along
@@ -6,7 +6,7 @@ ABOUT KRYPTON COMPILER
    graphical user interface based applications.
 
 
-ABOUT KRYPTON LANGUAGE
+About Krypton Language
 ----------------------
    The Krypton language has many of the common constructs found in many other
    static, compiled languages. A Krypton program can contain programmer defined
@@ -45,7 +45,7 @@ ABOUT KRYPTON LANGUAGE
       properties
          A method that looks like a field from code outside of programmer
          defined data type. Properties allow more flexibility for a programmer to
-         define whether fields are read-only or readable/writeable. Properties
+         define whether fields are read-only or readable/writable. Properties
          also provide a programmer the opportunity to perform calculations or
          other steps that may be needed in order to derive the value of a
          logical field.
@@ -74,19 +74,13 @@ ABOUT KRYPTON LANGUAGE
    The "override" keyword can then be used in a subclass to provide an
    implementation for the polymorphic method.
 
-ABOUT CHECKBOOK
+About Checkbook
 ---------------
    Checkbook is an application that I use for tracking and balancing my bank
    accounts at home.
 
-   The application is still in an incomplete state. The three tabs on the top
-   left-hand side of the screen ("Account Balances", "Monthly Expenses", and
-   "Automatic Transactions") have not yet been implemented. Another feature
-   that would be nice to implement is an interface for creating and deleting
-   new accounts.
 
-
-HOW TO COMPILE AND RUN
+How to compile and run
 ----------------------
    Simply double click on "compile_CheckBook.cmd" or "run_CheckBook.cmd" in
    Windows Explorer to run the Krypton compiler on the source-code files in
@@ -94,7 +88,7 @@ HOW TO COMPILE AND RUN
    "build" directory.
 
 
-HOW THE KRYPTON COMPILER WORKS
+How the Krypton compiler works
 ------------------------------
    Currently the Krypton compiler is implemented as a front-end to the GNU C
    compiler. Kryptonc.exe will internally tokenize a file, parse tokens into
@@ -103,7 +97,7 @@ HOW THE KRYPTON COMPILER WORKS
    Windows build of GCC have been put into the "bin" directory).
 
 
-IMPLEMENTATION OF KRYPTONC
+Implementation of Kryptonc
 --------------------------
    The current version of the Krypton compiler is self-defined (the compiler
    is written in the same language that it recognizes). The very first version
@@ -111,7 +105,7 @@ IMPLEMENTATION OF KRYPTONC
    language was relatively simple.
 
 
-RUNTIME LIBRARIES
+Runtime Libraries
 -----------------
    There are also a few runtime libraries that I have developed to go with the
    language.
