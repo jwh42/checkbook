@@ -1,0 +1,30 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 10.05.2008] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.Graphics.*;
+import Krypton.Graphics.Shapes.*;
+import Krypton.Graphics.Patterns.*;
+
+
+namespace CheckBook.Pages { 
+
+
+// @descrip Displays summary information about all accounts
+public class AccountsPage extends Component {
+
+
+// @descrip Constructs a new account setup page
+public AccountsPage() {
+	Rectangle r = new Rectangle();
+	r.Fill = new SolidPattern(new Color(0xff00ffff));
+	r.XAlignment = XAlign.Stretch;
+	r.YAlignment = YAlign.Stretch;
+	InsertElementAtBottom(r);
+}
+
+
+}
+}
+

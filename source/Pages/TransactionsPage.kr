@@ -1,0 +1,397 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 10.05.2008] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.*;
+import Krypton.Collections.*;
+import Krypton.Graphics.*;
+import Krypton.Graphics.Shapes.*;
+import Krypton.Graphics.Patterns.*;
+import Krypton.UI.*;
+import Krypton.UI.Layouts.*;
+import Krypton.UI.Controls.*;
+import CheckBook.Models.*;
+
+
+namespace CheckBook.Pages { 
+
+
+// @descrip Displays list of all transactions
+public class TransactionsPage extends TransactionsPage_Template {
+
+
+// @descrip Sets reference to the @see(MessageBox) to use
+// @param mb Message box to use
+public void SetMessageBox(MessageBox mb) {
+	mMessageBox = mb;
+}
+
+
+// @descrip Sets the account to display to the user
+// @param id ID of the account to show to the user
+public void SetActiveAccount(string id) {
+	mActiveAccount = GetAccountFromID(id);
+	HideTransactionInputForm();
+	PopulateVisibleTransactions();
+	PopulateAccountBalances();
+}
+
+
+// User clicked on the cancel button of the edit form
+private void OnEditCancelClicked(object sender) {
+	HideTransactionInputForm();
+}
+
+
+// User clicked on the close button of the edit form
+private void OnEditDeleteClicked(object sender) {
+
+	HideTransactionInputForm();
+	
+	if(mRecordView.SelectedItems.Count > 0) {
+		mMessageBox.Show(
+			OnDeleteConfirmed,
+			"Are you sure you want to delete this transaction?",
+			"Yes",
+			"No"
+		);
+	}
+}
+
+
+// User clicked yes or no in delete confirmation window
+private void OnDeleteConfirmed(object sender) {
+
+	if(mMessageBox.LastButtonUsed == 0) {
+		if(mRecordView.SelectedItems.Count > 0) {
+
+			TransactionModel t = TransactionModel(mRecordView.SelectedItems[0]);
+			
+			t.SubtractFromTargetAccounts();
+
+			mTransactions.Remove(t);
+			mVisTransact.Remove(t);
+
+			PopulateAccountBalances();
+		}
+	}
+}
+
+
+// User clicked on the commit button of the edit form
+private void OnEditCommitClicked(object sender) {
+
+	HideTransactionInputForm();
+
+	if(mRecordView.SelectedItems.Count == 0) {
+		CommitTransactionCreate();
+	} else {
+		CommitTransactionUpdate();
+	}
+
+	PopulateAccountBalances();   
+}
+
+
+// Commits a new transaction
+private void CommitTransactionCreate() {
+
+	TransactionModel t = mEditForm.CreateNewTransaction(mActiveAccount);
+
+	t.AddToTargetAccounts();
+
+	mVisTransact.Insert(0, t);
+	mTransactions.Insert(0, t);
+}
+
+
+// Updates an existing transaction
+private void CommitTransactionUpdate() {
+
+	TransactionModel t = TransactionModel(mRecordView.SelectedItems[0]);
+
+	t.SubtractFromTargetAccounts();
+	mEditForm.UpdateTransaction(t);
+	t.AddToTargetAccounts();
+
+	int index = mRecordView.DataSource.IndexOf(t);
+	mRecordView.DataSource[index] = t;
+}
+
+
+// User clicked on an existing transaction in the main list
+private void OnExistingRecordClicked(object sender, RoutedEventArgs args) {
+
+	mNewRecSelect.IsVisible = false;
+ 
+	if(mRecordView.SelectedItems.Count > 0) {
+	
+		double rowH = mRecordView.RowHeight;
+		object item = mRecordView.SelectedItems[0];
+		int index = mRecordView.DataSource.IndexOf(item);
+
+		Point src = new Point(0.0, rowH*double(index));
+		Point dst = TransformPoint(src, mRecordView, this);
+		
+		ShowTransactionPopup(dst.Y, rowH);
+
+		mEditForm.ShowExistingTransaction(TransactionModel(item));
+	}
+}
+
+
+// User clicked on the 'New Record' button
+private void OnNewRecordClicked(object sender, RoutedEventArgs args) {
+
+	mRecordView.SelectedItems.Clear();	
+	mNewRecSelect.IsVisible = true;
+	mEditForm.ShowNewTransaction();
+
+	Point pt = TransformPoint(new Point(), mNewRecord, this);
+	ShowTransactionPopup(pt.Y, mNewRecord.Measure().Height);
+}
+
+
+// Displays the record-edit popup form
+private void ShowTransactionPopup(double rowY, double rowHeight) {
+	mEditPopup.Y = rowY;
+	mEditPopup.Height = rowHeight;
+	mEditPopup.IsExpanded = true;
+}
+
+
+// User changed the current search input
+private void OnSearchInputChanged(object sender) {
+	HideTransactionInputForm();
+	PopulateVisibleTransactions();
+}
+
+
+// User changed the selected date range
+private void OnDateRangeChanged(object sender) {
+	HideTransactionInputForm();
+	PopulateVisibleTransactions();
+}
+
+
+// User clicked on a check box in the main list
+protected override void OnCheckButtonClicked(
+	DataView sender,
+	object origionalSender) {
+
+	DataView dv = DataView(sender);
+	TransactionModel t = TransactionModel(dv.CurrentValue);
+	CheckButton cb = CheckButton(origionalSender);
+
+	t.SubtractFromTargetAccounts();
+	t.IsReconciled = cb.IsChecked;
+	t.AddToTargetAccounts();
+
+	PopulateAccountBalances();
+}
+
+
+// Hides the transaction input form
+private void HideTransactionInputForm() {
+	mEditPopup.IsExpanded = false;
+	mNewRecSelect.IsVisible = false;
+}
+
+
+// @descrip Sets the categories to show to the user
+// @param categories List of CategoryModel instances
+public void SetCategories(List categories) {
+	mEditForm.SetCategories(categories);
+}
+
+
+// @descrip Sets the accounts to show to the user
+// @param accounts List of AccountModel instances
+public void SetAccounts(List accounts) {
+	mAccounts = accounts;
+	mEditForm.SetAccounts(accounts);
+}
+
+
+// @descrip Ssets list of transactions to show the user
+// @param value List of TransactionModel instances
+public void SetTransactions(List value) {
+	mTransactions = value;
+	PopulateVisibleTransactions();
+}
+
+
+// User changed the currently selected account
+private void OnAccountFilterChanged(IReadableList sender, int start, int count) {
+	PopulateVisibleTransactions();
+	PopulateAccountBalances();
+}
+
+
+// Converts an account balance into a string
+private static string BalanceToString(int balance) {
+	gTextBuffer.Length = 0;
+	gTextBuffer.Append("$");
+	gTextBuffer.Append(double(balance)/100.0, "{#,##}0.00");
+	return gTextBuffer.Value;
+}
+
+
+// Populates the account balance text boxes
+private void PopulateAccountBalances() {
+
+	if(mActiveAccount == null) {
+		mTxtAcctLabel.Text = "";
+		mTxtActualBal.Text = "N/A";
+		mTxtReconBal.Text = "N/A";
+
+	} else {
+		mTxtAcctLabel.Text = mActiveAccount.Label;
+		mTxtActualBal.Text = BalanceToString(mActiveAccount.ActualBalance);
+		mTxtReconBal.Text = BalanceToString(mActiveAccount.ReconciledBalance);
+	}
+}
+
+
+// Populates the list of visible transactions
+private void PopulateVisibleTransactions() {
+
+	FilterCriteria filter;
+	
+	string searchString = mSearchInput.Text;
+	double searchAmount;
+	
+	Double.TryParse(searchString, out searchAmount);
+
+	filter.MinDate = mMinDateView.SelectedValue;
+	filter.MaxDate = mMaxDateView.SelectedValue;
+	filter.Account = mActiveAccount;
+	filter.SearchAmount = Math.Abs(int(searchAmount*100.0));
+	filter.SearchString = searchString;
+
+	mRecordView.DataSource = List.Empty;
+
+	mVisTransact.Clear();
+
+	if(mTransactions != null) {
+		for(int i = 0; i < mTransactions.Count; i++) {
+			TransactionModel t = TransactionModel(mTransactions[i]);
+			if(IsWithinFilter(t, inout filter)) {
+				mVisTransact.Add(t);
+			}
+		}
+	}
+
+	mRecordView.DataSource = mVisTransact;
+}
+
+
+
+// Determins whether a transaction fits particular filter criteria
+private static bool IsWithinFilter(TransactionModel t, inout FilterCriteria f) {
+	return (
+		BelongsToAccount(t, f.Account) &&
+		InDateRange(t, f.MinDate, f.MaxDate) &&
+		MatchesSearch(t, inout f)
+	);
+}
+
+
+// Gets the account corresponding to a particular ID
+private AccountModel GetAccountFromID(string id) {
+	
+	if(mAccounts != null) {
+		for(int i = 0; i < mAccounts.Count; i++) {
+			AccountModel m = AccountModel(mAccounts[i]);
+			if(String.Equals(m.ID, id)) {
+				return m;
+			}
+		}
+	}
+	
+	return null;
+}
+
+
+// Determins whether a transaction belongs to an account
+private static bool BelongsToAccount(TransactionModel t, AccountModel a) {
+	return (a == null || t.Account == a || t.TransferDest == a);
+}
+
+
+// Determins whether one date is within a date range
+private static bool InDateRange(TransactionModel t, DateTime min, DateTime max) {
+	return ((
+		t.IsNew
+	) || (
+		DateTime.Compare(t.Date, min) >= 0 &&
+		DateTime.Compare(t.Date, max) <= 0
+	));
+}
+
+
+// Determins whether @p(s) contains @p(find)
+private static bool MatchesSearch(TransactionModel t, inout FilterCriteria f) {
+	return (
+		(f.SearchAmount == Math.Abs(t.Amount)) ||
+		(f.SearchString == null) ||
+		(f.SearchString.Length == 0) ||
+		(t.Description != null && t.Description.IndexOf(f.SearchString, 0, true) >= 0) ||
+		(String.Equals(f.SearchString, "unreconciled") && !t.IsReconciled)
+	);
+}
+
+
+// @descrip Constructs a new summary page instance
+public TransactionsPage() {
+
+	DateTime today = DateTime.LocalDate;
+	int      date = DateTime.GetDaysInMonth(today.Year, today.Month);
+	DateTime moStart = new DateTime(today.Year, today.Month, 1);
+	DateTime maxDate = new DateTime(today.Year, today.Month, date);
+	DateTime minDate = moStart.AddMonths(-2);
+
+	mEditForm = new TransactionEditForm();
+
+	mEditPopup = new Popup();
+	mEditPopup.Content = mEditForm;
+	mEditPopup.XAlignment = XAlign.Center;
+	mEditPopup.YAlignment = YAlign.Absolute;
+	mEditPopup.Y = 10.0;
+	mEditPopup.Height = 0.0;
+
+	InsertElementAtTop(CreateTemplateContent());
+	InsertElementAtTop(mEditPopup);
+
+	mVisTransact  = new List();
+	mMinDateView  = DatePicker(GetSafeChild("MinDateView"));
+	mMaxDateView  = DatePicker(GetSafeChild("MaxDateView"));
+	mSearchInput  =    TextBox(GetSafeChild("SearchInput"));
+	mTxtAcctLabel =   TextArea(GetSafeChild("AccountLabel"));
+	mTxtActualBal =   TextArea(GetSafeChild("ActualBalance"));
+	mTxtReconBal  =   TextArea(GetSafeChild("ReconciledBalance"));
+	mRecordView   =  TableView(GetSafeChild("RecordView"));
+	mNewRecord    =    Element(GetSafeChild("NewRecord"));
+	mNewRecSelect =    Element(GetSafeChild("SelectNewRecord"));
+  
+	mMinDateView.SelectedValue = minDate;
+	mMaxDateView.SelectedValue = maxDate;
+	
+	mMinDateView.SelectionChanged +@ OnDateRangeChanged;
+	mMaxDateView.SelectionChanged +@ OnDateRangeChanged;
+	
+	mSearchInput.TextChanged +@ OnSearchInputChanged;
+
+	mEditForm.CommitClicked +@ OnEditCommitClicked;
+	mEditForm.CancelClicked +@ OnEditCancelClicked;
+	mEditForm.DeleteClicked +@ OnEditDeleteClicked;
+
+	mNewRecord.Released +@ OnNewRecordClicked;
+	mRecordView.Released +@ OnExistingRecordClicked;
+}
+
+
+}
+}
+

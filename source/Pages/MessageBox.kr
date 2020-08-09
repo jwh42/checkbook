@@ -1,0 +1,180 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 11.18.2010] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.*;
+import Krypton.Graphics.*;
+import Krypton.Graphics.Shapes.*;
+import Krypton.Graphics.Patterns.*;
+import Krypton.UI.*;
+import Krypton.UI.Controls.*;
+import Krypton.UI.Layouts.*;
+
+
+namespace CheckBook.Pages {
+
+
+// @descrip Displays a message box to the user
+public class MessageBox extends Component {
+
+
+// Internal Values
+private int mLastButton;
+private EventHandler0 mHandler;
+private TextArea mMessage;
+private Button mButton1;
+private Button mButton2;
+private Button mButton3;
+
+
+// @descrip Index of the last button clicked by the user
+public int LastButtonUsed {
+	get { return mLastButton; }
+}
+
+
+// @descrip Displays this message box to the user
+// @param handler Event handler to invoke when user clicks a button
+// @param message Message to show the user
+// @param button1 Content for button #1
+public void Show(
+	EventHandler0 handler,
+	string message,
+	object button1) {
+
+	Show(handler, message, button1, null, null);
+}
+
+
+// @descrip Displays this message box to the user
+// @param handler Event handler to invoke when user clicks a button
+// @param message Message to show the user
+// @param button1 Content for button #1
+// @param button2 Content for button #2
+public void Show(
+	EventHandler0 handler,
+	string message,
+	object button1,
+	object button2) {
+
+	Show(handler, message, button1, button2, null);
+}
+
+
+// @descrip Displays this message box to the user
+// @param handler Event handler to invoke when user clicks a button
+// @param message Message to show the user
+// @param button1 Content for button #1
+// @param button2 Content for button #2
+// @param button3 Content for button #3
+public void Show(
+	EventHandler0 handler,
+	string message,
+	object button1,
+	object button2,
+	object button3) {
+
+	mHandler = handler;
+	mLastButton = -1;
+
+	mMessage.Text = message;
+	mButton1.Content = button1;
+	mButton2.Content = button2;
+	mButton3.Content = button3;
+	
+	mButton1.IsVisible = (button1 != null);
+	mButton2.IsVisible = (button2 != null);
+	mButton3.IsVisible = (button3 != null);
+	
+	IsVisible = true;
+}
+
+
+// User clicked on the first button
+private void OnButtonClick1(object sender) {
+	HandleButtonClicked(0);
+}
+
+
+// User clicked on the second button
+private void OnButtonClick2(object sender) {
+	HandleButtonClicked(1);
+}
+
+
+// User clicked on the third button
+private void OnButtonClick3(object sender) {
+	HandleButtonClicked(2);
+}
+
+
+// User clicked on one of the buttons
+private void HandleButtonClicked(int index) {
+	IsVisible = false;
+	mLastButton = index;
+	mHandler(this);
+}
+
+
+// @descrip Constructs a new message box instance
+public MessageBox() {
+
+	mMessage = new TextArea();
+	mMessage.Margins = new Padding(10.0);
+	mMessage.XAlignment = XAlign.Center;
+	mMessage.Text = "Message to show user";
+
+	mButton1 = new Button(DefaultTheme.GetResources());
+	mButton1.Click +@ OnButtonClick1;
+	mButton1.Margins = new Padding(3.0);
+	mButton1.Content = "Button#1";
+
+	mButton2 = new Button(DefaultTheme.GetResources());
+	mButton2.Click +@ OnButtonClick2;
+	mButton2.Margins = new Padding(3.0);
+	mButton2.Content = "Button#2";
+
+	mButton3 = new Button(DefaultTheme.GetResources());
+	mButton3.Click +@ OnButtonClick3;
+	mButton3.Margins = new Padding(3.0);
+	mButton3.Content = "Button#3";
+	
+	Rectangle background = new Rectangle();
+	background.Fill = new SolidPattern(0x00000040);
+	background.XAlignment = XAlign.Stretch;
+	background.YAlignment = YAlign.Stretch;
+
+	Rectangle frame = new Rectangle();
+	frame.Fill = new SolidPattern(0xeeeeeeff);
+	frame.Stroke = new SolidPattern(0xcdcdcdff);
+	frame.XAlignment = XAlign.Stretch;
+	frame.YAlignment = YAlign.Stretch;
+
+	StackLayout buttons = new StackLayout();
+	buttons.Margins = new Padding(5.0, 0.0, 5.0, 8.0);
+	buttons.Orientation = Orientation.Horizontal;
+	buttons.XAlignment = XAlign.Center;
+	buttons.InsertTop(mButton3);
+	buttons.InsertTop(mButton2);
+	buttons.InsertTop(mButton1);
+	
+	Grid content = new Grid(2, 1);
+	content.XAlignment = XAlign.Center;
+	content.YAlignment = YAlign.Center;
+	content.Add(frame, 0, 0, 2, 1);
+	content.Add(mMessage, 0, 0);
+	content.Add(buttons, 1, 0);
+
+	InsertElementAtTop(background);
+	InsertElementAtTop(content);
+	
+	XAlignment = XAlign.Stretch;
+	YAlignment = YAlign.Stretch;
+	IsVisible = false;
+}
+
+
+}
+}
+

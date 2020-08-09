@@ -1,0 +1,165 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 11.27.2008] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.*;
+import Krypton.Graphics.*;
+import Krypton.Graphics.Animations.*;
+import Krypton.UI.*;
+import Krypton.UI.Layouts.*;
+
+
+namespace CheckBook.Pages { 
+
+
+// @descrip Creates graphics for the default check button theme
+internal static class CategoryButtonTheme {
+
+
+// Internal Static Variables
+private static Graphic gBkgndTmpl;
+private static Graphic gCheckTmpl;
+
+
+// Visual states for this template
+internal static VisualState[] States() {
+	return new VisualState[] {
+		CreateBkgndState("Normal",    0),
+		CreateBkgndState("Hover",     1),
+		CreateBkgndState("Focus",     2),
+		CreateBkgndState("Press",     3),
+		CreateBkgndState("Disabled",  4),
+		CreateCheckState("Checked",   true),
+		CreateCheckState("Unchecked", false)
+	};
+}
+
+
+// Adds content into a @see(Control) instance
+internal static void Create(object objref, ResourceCollection r) {
+
+	Graphic bkgnd;
+	Graphic check;
+	Layout content;
+	Control c = Control(objref);
+
+	// setup global objects if needed
+	if(gBkgndTmpl == null) {
+		gBkgndTmpl = GetBkgndTemplate();
+		gCheckTmpl = GetCheckTemplate();
+	}
+
+	bkgnd = gBkgndTmpl.Clone();
+	bkgnd.Name = "Background";
+	bkgnd.XAlignment = XAlign.Stretch;
+	bkgnd.YAlignment = YAlign.Stretch;
+
+	check = gCheckTmpl.Clone();
+	check.Name = "CheckMark";
+	check.XAlignment = XAlign.Stretch;
+	check.YAlignment = YAlign.Stretch;
+	check.IsVisible = false;
+
+	content = new Layout();
+	content.Name = "Content";
+	content.XAlignment = XAlign.Left;
+	content.YAlignment = YAlign.Center;
+	content.Margins = new Padding(6.0);
+	content.SkipChildrenInSearch = true;
+
+	c.AddElementInternal(bkgnd);
+	c.AddElementInternal(check);
+	c.AddElementInternal(content);
+}
+
+
+// Creates one of the common states
+private static VisualState CreateBkgndState(string name, int f) {
+
+	VisualState vs;
+	FrameAnimation fa;
+	
+	fa = new FrameAnimation(f);
+	fa.Target = "Background";
+
+	vs = new VisualState();
+	vs.Group = "CommonStates";
+	vs.Name = name;
+	vs.Add(fa);
+
+	return vs;
+}
+
+
+// Creates one of the check states
+private static VisualState CreateCheckState(string name, bool show) {
+
+	IsVisibleAnimation fa = new IsVisibleAnimation(show);
+	fa.Target = "CheckMark";
+
+	VisualState vs = new VisualState();
+	vs.Group = "CheckStates";
+	vs.Name = name;
+	vs.Add(fa);
+
+	return vs;
+}
+
+
+// Creates the template for the background content
+private static Graphic GetBkgndTemplate() {
+
+	Graphic g = new Graphic(5, 20.0, 20.0, 8.0, 8.0, 8.0, 8.0);
+
+	g.GotoFrame(0); CreateBkgnd(g, 0xffffffff, 0x808080ff, 0xcdcdcdff); // normal
+	g.GotoFrame(1); CreateBkgnd(g, 0xffffffff, 0x0000ffff, 0x8cc6ffff); // hover
+	g.GotoFrame(2); CreateBkgnd(g, 0xffffffff, 0x00ffffff, 0xffffffff); // focus
+	g.GotoFrame(3); CreateBkgnd(g, 0xffffffff, 0x0000ffff, 0x0000ffff); // press
+	g.GotoFrame(4); CreateBkgnd(g, 0xcdcdcdff, 0x808080ff, 0x808080ff); // disabled
+	g.GotoFrame(0);
+
+	return g;
+}
+
+
+// Creates the template for the check content
+private static Graphic GetCheckTemplate() {
+	Graphic g = new Graphic(1, 20.0, 20.0, 8.0, 8.0, 8.0, 8.0);
+	CreateBkgnd(g, 0xb0d8ffff, 0x0000ffff, 0x8cc6ffff);
+	return g;
+}
+
+
+// Creates a background graphic
+private static void CreateBkgnd(Graphic g, int fill, int outter, int inner) {
+
+	g.MoveTo (19.5,  0.5);
+	g.LineTo ( 7.5,  0.5);
+	g.CurveTo( 4.0,  0.5,  0.5,  4.0,  0.5,  7.5);
+	g.LineTo ( 0.5, 12.5);
+	g.CurveTo( 0.5, 16.0,  4.0, 19.5,  7.5, 19.5);
+	g.LineTo (19.5, 19.5);
+
+	g.SetPattern(new Color(fill));
+	g.FillPreserve();
+
+	g.SetPattern(new Color(outter));
+	g.SetStrokeStyle(1.0);
+	g.Stroke();
+
+	g.MoveTo (19.5,  1.5);
+	g.LineTo ( 7.5,  1.5);
+	g.CurveTo( 4.0,  1.5,  1.5,  4.0,  1.5,  7.5);
+	g.LineTo ( 1.5, 12.5);
+	g.CurveTo( 1.5, 16.0,  4.0, 18.5,  7.5, 18.5);
+	g.LineTo (19.5, 18.5);
+
+	g.SetPattern(new Color(inner));
+	g.SetStrokeStyle(1.0);
+	g.Stroke();
+}
+
+
+}
+}

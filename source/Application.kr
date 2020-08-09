@@ -1,0 +1,57 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 11.28.2008] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.Graphics.*;
+import Krypton.UI.Window;
+import Krypton.UI.WindowType;
+import Krypton.UI.WindowFlag;
+
+
+namespace CheckBook { 
+
+
+// @descrip Application entry-point code
+public static class Application {
+
+
+// @descrip Application entry-point function
+// @param args Application arguments
+// @retrns Zero if successful, non-zero if failure
+public static int Main(string[] args) {
+
+	Window       w;
+	CheckBookApp c;
+
+	c = new CheckBookApp();
+	
+	c.Width  = 780.0;
+	c.Height = 500.0;
+	c.Name = "CheckBookApp";
+
+	w = Window.Create(
+		c,
+		null,
+		WindowType.Window,
+		WindowFlag.Normal
+	);
+	
+	w.Caption = "CheckBook";
+	//++w.BackgroundColor = new SolidPattern(new Color(0.8,0.8,0.8));
+	c.Execute();
+}
+
+
+// @descrip Application entry-point hack
+// @returns Zero if successful, non-zero if failure
+public static int __main() {
+	Main(Krypton.Text.Parsers.StringParser.ParseArguments(
+		Krypton.System.Process.CommandLine
+	));
+}
+
+
+}
+}
+

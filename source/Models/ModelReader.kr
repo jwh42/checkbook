@@ -1,0 +1,294 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 10.17.2010] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.*;
+import Krypton.Text.*;
+import Krypton.Collections.*;
+import Krypton.IO.File;
+
+
+namespace CheckBook.Models { 
+
+
+// @descrip Methods for loading data models from disk
+internal static class ModelReader {
+
+
+// @descrip Loads the list of categories
+// @returns List of CategoryModel instances
+public static List LoadCategories() {
+
+	CategoryModel category;
+	TabFileReader reader = TabFileReader.Open("categories.config");
+	TextBuffer buffer = new TextBuffer();
+	List result = new List();
+	int index = 1;
+
+	// add the transfer category   
+	result.Add(CreateTransferCategory());
+
+	// note that 1st line (headers) is skipped
+	while(reader.MoveToNextRecord()) {
+		category = ReadCategory(reader, buffer);
+		category.Index = index;
+		result.Add(category);
+		index++;
+	}
+  
+	// cleanup
+	delete buffer;
+	delete reader;   
+
+	// return list of categories
+	return result;
+}
+
+
+// Creates the transfer category model
+private static CategoryModel CreateTransferCategory() {
+
+	CategoryModel m = new CategoryModel();
+	
+	m.Type = CategoryType.Transfer;
+	m.ID = "transfer";
+	m.Label = "Transfer";
+	
+	return m;
+}
+
+
+// Reads a single account record
+private static CategoryModel ReadCategory(TabFileReader reader, TextBuffer buffer) {
+
+	CategoryModel m = new CategoryModel();
+
+	m.Type = GetCategoryType(reader.GetNextField(buffer));
+	m.ID = reader.GetNextField(buffer).AbandonString();
+	m.Label = reader.GetNextField(buffer).AbandonString();
+	
+	return m;
+}
+
+
+// Converts content of a TextBuffer into a category type
+private static CategoryType GetCategoryType(TextBuffer type) {
+		  if(type.Equals("expence")) return CategoryType.Expence;
+	else if(type.Equals("income"))  return CategoryType.Income;
+	else                            return CategoryType.Special;
+}
+
+
+// @descrip Loads the list of accounts
+// @returns List of AccountModel instances
+public static List LoadAccounts() {
+
+	AccountModel account;
+	TabFileReader reader = TabFileReader.Open("accounts.config");
+	TextBuffer buffer = new TextBuffer();
+	List result = new List();
+	int index = 0;
+	
+	// note that 1st line (headers) is skipped
+	while(reader.MoveToNextRecord()) {
+		account = ReadAccount(reader, buffer);
+		account.Index = index;
+		result.Add(account);
+		index++;
+	}
+  
+	// cleanup
+	delete buffer;
+	delete reader;   
+
+	// return list of accounts
+	return result;
+}
+
+
+// Reads a single account record
+private static AccountModel ReadAccount(TabFileReader reader, TextBuffer buffer) {
+
+	AccountModel m = new TransactionModel();
+
+	m.ID = reader.GetNextField(buffer).AbandonString();
+	m.Label = reader.GetNextField(buffer).AbandonString();
+	
+	return m;
+}
+
+
+// @descrip Loads the list of transaction files
+// @returns List of TransactionFileModel instances
+public static List GetTransactionFileList() {
+
+	List result = new List();
+	TextBuffer fileName = new TextBuffer();
+	DateTime now = DateTime.LocalDate;
+	int thisYear = now.Year;
+	int fileYear = thisYear;
+
+	// count backwards through years
+	// until a file does not exist
+	for(;;) {
+		
+		// get name of current file
+		fileName.Append("records_");
+		fileName.Append(fileYear);
+		fileName.Append(".txt");
+
+		// see if file exists for this year
+		if(File.Exists(fileName.Value)) {
+			result.Add(CreateTransactionFileModel(fileName.AbandonString()));
+
+		// quit if a file does not exist for
+		// any year except the current year
+		} else {
+			if(fileYear < thisYear) {
+				break;
+			}
+		}
+
+		// decrement current year
+		fileName.Clear();
+		fileYear--;
+	}
+	
+	// return list of data files
+	delete fileName;
+	return result;
+}
+
+
+// Creates a new transaction file model
+private static TransactionFileModel CreateTransactionFileModel(string id) {
+	TransactionFileModel file = new TransactionFileModel();
+	file.ID = id;
+	file.IsModified = false;
+	return file;
+}
+
+
+// @descrip Loads the list of all transactions
+// @returns List of transactions loaded out of data files
+// @param files List of TransactionFileModel instances
+// @param accounts List of AccountModel instances
+// @param categories List of CategoryModel instances
+public static List LoadTransactions(
+	List files,
+	List accounts,
+	List categories) {
+
+	List result = new List();
+	
+	for(int i = 0; i < files.Count; i++) {
+		LoadTransactionsFromFile(
+			TransactionFileModel(files[i]),
+			result,
+			accounts,
+			categories
+		);
+	}
+	
+	result.Reverse();
+	result.Sort(new ValueCompare(OrderTransactionsByReverseDate));
+
+	return result;
+}
+
+
+// Reads transactions from a particular file
+private static void LoadTransactionsFromFile(
+	TransactionFileModel file,
+	List result,
+	List accounts,
+	List categories) {
+
+	TransactionModel record;
+	TabFileReader reader = TabFileReader.Open(file.ID);
+	TextBuffer buffer = new TextBuffer();
+	
+	// note that 1st line (headers) is skipped
+	while(reader.MoveToNextRecord()) {
+		record = ReadTransaction(reader, accounts, categories, buffer);
+		result.Add(record);
+	}
+  
+	// cleanup
+	delete buffer;
+	delete reader;   
+}
+
+
+// Reads a single transaction entry
+private static TransactionModel ReadTransaction(
+	TabFileReader reader,
+	List accounts,
+	List categories,
+	TextBuffer buffer) {
+
+	TransactionModel m = new TransactionModel();
+
+	m.IsReconciled = reader.GetNextField(buffer).ToInt32() == 1;
+	m.Date = reader.GetNextField(buffer).ToDateTime();
+	m.Amount = reader.GetNextField(buffer).ToInt32();
+	m.Category = FindCategory(categories, reader.GetNextField(buffer));
+	m.Account = FindAccount(accounts, reader.GetNextField(buffer));
+ 
+	if(m.Category != null && m.Category.Type == CategoryType.Transfer) {
+		m.TransferDest = FindAccount(accounts, reader.GetNextField(buffer));
+	} else {
+		m.Description = reader.GetNextField(buffer).AbandonString();
+	}
+	
+	return m;
+}
+
+
+// Finds an account within a list of accounts
+private static AccountModel FindAccount(List list, TextBuffer id) {
+
+	for(int i = 0; i < list.Count; i++) {
+		AccountModel m = AccountModel(list[i]);
+		if(id.Equals(m.ID)) {
+			return m;
+		}
+	}
+
+	Console.Write("unknown account: ");
+	Console.Write(id.Value);
+	Console.Write("\n");
+
+	return null;
+}
+
+
+// Finds a category within a list of categories
+private static CategoryModel FindCategory(List list, TextBuffer id) {
+
+	for(int i = 0; i < list.Count; i++) {
+		CategoryModel m = CategoryModel(list[i]);
+		if(id.Equals(m.ID)) {
+			return m;
+		}
+	}
+
+	Console.Write("unknown category: ");
+	Console.Write(id.Value);
+	Console.Write("\n");
+
+	return null;
+}
+
+
+// Compares two transaction files
+private static int OrderTransactionsByReverseDate(object a, object b) {
+	TransactionModel lhs = TransactionModel(a);
+	TransactionModel rhs = TransactionModel(b);
+	return DateTime.Compare(rhs.Date, lhs.Date);
+}
+
+
+}
+}

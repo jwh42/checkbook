@@ -1,0 +1,183 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 10.28.2010] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.Graphics.*;
+import Krypton.Graphics.Shapes.*;
+import Krypton.Graphics.Patterns.*;
+import Krypton.UI.*;
+import Krypton.UI.Layouts.*;
+import Krypton.UI.Controls.*;
+
+
+namespace CheckBook.Pages { 
+
+
+// @descrip Form used to edit a transaction
+public class TransactionEditForm_Template extends Component {
+
+
+// Creates the content inside a TransactionEditForm
+public void CreateTemplateContent() {
+
+   Grid grid = new Grid(4, 2);
+   grid.Margins = new Padding(3.0);
+   grid.XAlignment = XAlign.Stretch;
+   grid.YAlignment = YAlign.Stretch;
+
+   grid.GetCol(0).Length = new Length(LengthMode.Auto);
+   grid.GetCol(1).Length = new Length(280.0, LengthMode.Fixed);
+
+   grid.GetRow(0).Length = new Length(LengthMode.Auto);
+   grid.GetRow(1).Length = new Length(LengthMode.Auto);
+   grid.GetRow(2).Length = new Length(LengthMode.Auto);
+   grid.GetRow(3).Length = new Length(LengthMode.Auto);
+
+   grid.Add(CreateLabel("LabelDate", "Date:"),           0, 0);
+   grid.Add(CreateLabel("LabelCategory", "Category:"),   1, 0);
+   grid.Add(CreateLabel("LabelDescrip", "Description:"), 2, 0);
+
+   grid.Add(CreateDateAndAmountRow(),       0, 1);
+   grid.Add(CreateDropList("Category"),     1, 1);
+   grid.Add(CreateDropList("AccountDst"),   2, 1);
+   grid.Add(CreateTextInput("Description"), 2, 1);
+   grid.Add(CreateActionButtons(),          3, 1);
+
+   InsertElementAtTop(CreateBackground());
+   InsertElementAtTop(grid);
+
+   XAlignment = XAlign.Absolute;
+   YAlignment = YAlign.Absolute;
+}
+
+
+// Creates the background for this control
+private Element CreateBackground() {
+
+   Rectangle r = new Rectangle();
+   r.Margins = new Padding(-3.0);
+   r.Fill = new SolidPattern(new Color(0xffffe0ff));
+   r.Stroke = new SolidPattern(new Color(0xa0a0ffa0));
+   r.StrokeWidth = 3.0;
+   r.XAlignment = XAlign.Stretch;
+   r.YAlignment = YAlign.Stretch;
+   
+   return r;
+}
+
+
+// Creates the first input row
+private Element CreateDateAndAmountRow() {
+
+   Grid grid = new Grid(1, 4);
+   grid.XAlignment = XAlign.Stretch;
+
+   grid.GetCol(0).Length = new Length(LengthMode.Auto);
+   grid.GetCol(1).Length = new Length(LengthMode.Remainder);
+   grid.GetCol(2).Length = new Length(LengthMode.Auto);
+   grid.GetCol(3).Length = new Length(LengthMode.Auto);
+
+   grid.Add(CreateDatePicker("Date"),            0, 0);
+   grid.Add(CreateLabel("LabelAmnt", "Amount:"), 0, 2);
+   grid.Add(CreateAmountInput("Amount"),         0, 3);
+
+   return grid;
+}
+
+
+// Creates the buttons to take action on this record
+private Element CreateActionButtons() {
+
+   Grid grid = new Grid(1, 3);
+   grid.XAlignment = XAlign.Stretch;
+   grid.YAlignment = YAlign.Stretch;
+
+   grid.GetCol(0).Length = new Length(LengthMode.Remainder);
+   grid.GetCol(1).Length = new Length(LengthMode.Auto);
+   grid.GetCol(2).Length = new Length(LengthMode.Auto);
+
+   grid.Add(CreateButton("Commit", "Save"), 0, 0);
+   grid.Add(CreateButton("Delete", "Delete"), 0, 1);
+   grid.Add(CreateButton("Cancel", "Cancel"), 0, 2);
+
+   return grid;
+}
+
+
+// Creates a date picker control
+private Element CreateDatePicker(string id) {
+
+   DatePicker e = new DatePicker(DefaultTheme.GetResources());
+   e.Margins = new Padding(4.0);
+   e.XAlignment = XAlign.Stretch;
+   e.YAlignment = YAlign.Stretch;
+   e.Width = 100.0;
+   e.Height = 24.0;
+   e.Name = id;
+   return e;
+}
+
+
+// Creates a numeric input control
+private Element CreateAmountInput(string id) {
+
+   Element e = CreateTextInput(id);
+   e.Width = 80.0;
+   return e;
+}
+
+
+// Creates a text input control
+private Element CreateTextInput(string id) {
+
+   TextBox e = new TextBox(DefaultTheme.GetResources());
+   e.Margins = new Padding(4.0);
+   e.XAlignment = XAlign.Stretch;
+   e.Height = 24.0;
+   e.Name = id;
+   return e;
+}
+
+
+// Creates a static label element
+private Element CreateDropList(string id) {
+
+   ComboBox e = new ComboBox(DefaultTheme.GetResources());
+   e.Margins = new Padding(4.0);
+   e.XAlignment = XAlign.Stretch;
+   e.Width = 130.0;
+   e.Height = 24.0;
+   e.Name = id;
+   return e;
+}
+
+
+// Creates a static label element
+private static Element CreateLabel(string id, string text) {
+
+   TextArea e = new TextArea(text);
+   e.Margins = new Padding(4.0);
+   e.XAlignment = XAlign.Stretch;
+   e.YAlignment = YAlign.Center;
+   e.Name = id;
+   return e;
+}
+
+
+// Creates a button to show the user
+private Element CreateButton(string id, string label) {
+
+   Button e = new Button(DefaultTheme.GetResources());
+   e.Margins = new Padding(4.0);
+   e.XAlignment = XAlign.Stretch;
+   e.YAlignment = YAlign.Stretch;
+   e.Content = label;
+   e.Name = id;
+   return e;
+}
+
+
+}
+}
+

@@ -1,0 +1,109 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 11.19.2010] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.*;
+import Krypton.Collections.*;
+import Krypton.IO.*;
+import Krypton.Text.*;
+
+
+namespace CheckBook.Models { 
+
+
+// @descrip Methods for writing data models to disk
+internal static class ModelWriter {
+
+
+// @descrip Writes transactions back to disk
+// @remarks This method assumes that all non-new records are in
+//    reverse sorted order within @p(transactions)
+// @param transactions List of TransactionModel elements to write
+public static void WriteTransactions(List transactions) {
+
+	TextWriter wr = null;
+	int currentYear = -1;
+
+	// process transactions in forward order [transacitons
+	// list should be stored in primarily reverse order]
+	for(int i = transactions.Count - 1; i >= 0; i--) {
+
+		// access current transaction
+		TransactionModel t = TransactionModel(transactions[i]);
+		
+		// open new transaction file if needed
+		if(t.Date.Year > currentYear) {
+			CloseTransactionFile(wr);
+			wr = CreateTransactionFile(t.Date.Year);
+			currentYear = t.Date.Year;
+		}
+
+		// write transaction
+		WriteTransaction(wr, t);
+	}
+	
+	// close last file
+	CloseTransactionFile(wr);
+}
+
+
+// Writes a transaction into a @see(TextWriter)
+private static void WriteTransaction(TextWriter wr, TransactionModel t) {
+
+	wr.Write(t.IsReconciled? "1":"0");
+	wr.Write("\t");
+
+	t.Date.AppendTo(wr, "{MM}-{DD}-{YYYY}");
+	wr.Write("\t");
+
+	wr.Write(t.Amount);
+	wr.Write("\t");
+
+	wr.Write(t.Category.ID);
+	wr.Write("\t");
+
+	wr.Write(t.Account.ID);
+	wr.Write("\t");
+
+	if(t.Category.Type == CategoryType.Transfer) {
+		wr.Write(t.TransferDest.ID);
+		wr.Write(wr.NewLine);
+	} else {
+		wr.Write(t.Description);
+		wr.Write(wr.NewLine);
+	}
+}
+
+
+// Creates a transaction file
+private static TextWriter CreateTransactionFile(int year) {
+
+	TextBuffer fileName = new TextBuffer();
+
+	fileName.Append("records_");
+	fileName.Append(year);
+	fileName.Append(".txt");
+	
+	Stream stream = FileStream.Open(fileName.Value, FileAccess.Overwrite);
+	TextWriter writer = Encoding.Ascii.CreateWriter(stream, Ownership.FullOwnership);
+	
+	writer.WriteLine("c\tdate\tamount\tcategory\taccount\tdescription");
+
+	delete fileName;
+	return writer;
+}
+
+
+// Closes a transaction file
+private static void CloseTransactionFile(TextWriter wr) {
+	if(wr != null) {
+		wr.Flush();
+		wr.Close();
+		delete wr;
+	}
+}
+
+
+}
+}

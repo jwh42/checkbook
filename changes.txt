@@ -1,0 +1,5 @@
++ Copied older (different?) versions of Krypton.dll, Krypton.Graphics.dll,
+  Krypton.UI.dll into build
+
++ Updated CheckBookApp.kr: removed "application" tabs
+

@@ -1,0 +1,462 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 10.05.2008] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.Collections.*;
+import Krypton.DateTime;
+import Krypton.String;
+import Krypton.Graphics.*;
+import Krypton.Graphics.Shapes.*;
+import Krypton.Graphics.Patterns.*;
+import Krypton.Text.TextBuffer;
+import Krypton.UI.*;
+import Krypton.UI.Layouts.*;
+import Krypton.UI.Controls.*;
+import CheckBook.Models.*;
+
+
+namespace CheckBook.Pages { 
+
+
+// @descrip Displays list of all transactions
+public abstract class TransactionsPage_Template extends Component {
+
+
+// Internal Values
+internal static TextBuffer gTextBuffer;
+private static Pattern gPositiveText;
+private static Pattern gNegitiveText;
+
+
+// TODO: make these variables private when partial classes are implemented
+// Internal Components
+protected Popup mEditPopup;
+protected TransactionEditForm mEditForm;
+protected Element mNewRecord;
+protected Element mNewRecSelect;
+protected DatePicker mMinDateView;
+protected DatePicker mMaxDateView;
+protected TextBox mSearchInput;
+protected TextArea mTxtAcctLabel;
+protected TextArea mTxtActualBal;
+protected TextArea mTxtReconBal;
+protected TableView mRecordView;
+
+
+// TODO: make these variables private when partial classes are implemented
+// Internal Variables
+protected MessageBox mMessageBox;
+protected AccountModel mActiveAccount;
+protected List mTransactions;
+protected List mVisTransact;
+protected List mAccounts;
+
+
+// TODO: remove abstract declr & make private when partial classes implemented
+protected abstract void OnCheckButtonClicked(
+	DataView sender,
+	object origionalSender);
+
+
+// Creates the content inside a TransactionsPage
+public Element CreateTemplateContent() {
+
+	Grid grid = new Grid(4, 1);
+	grid.XAlignment = XAlign.Stretch;
+	grid.YAlignment = YAlign.Stretch;
+
+	grid.GetRow(0).Length = new Length(LengthMode.Auto);
+	grid.GetRow(1).Length = new Length(LengthMode.Auto);
+	grid.GetRow(2).Length = new Length(LengthMode.Auto);
+	grid.GetRow(3).Length = new Length(LengthMode.Remainder);
+
+	grid.Add(CreateAccountBar(),      0, 0);
+	grid.Add(CreateFilterBar(),       1, 0);
+	grid.Add(CreateNewRecordButton(), 2, 0);
+	grid.Add(CreateTransactionList(), 3, 0);
+	
+	return grid;
+}
+
+
+// Creates the list for showing transactions
+private Element CreateTransactionList() {
+
+	TableView tv = new TableView(DefaultTheme.GetResources());
+	tv.XAlignment = XAlign.Stretch;
+	tv.YAlignment = YAlign.Stretch;
+	tv.XAlignment = XAlign.Stretch;
+	tv.YAlignment = YAlign.Top;
+	tv.SelectedItems.SingleSelectionOnly = true;
+	tv.ColumnCount = 5;
+	tv.Name = "RecordView";
+
+	tv.GetColumn(0).Width = new Length( 30.0, LengthMode.Fixed);
+	tv.GetColumn(1).Width = new Length( 80.0, LengthMode.Fixed);
+	tv.GetColumn(2).Width = new Length(320.0, LengthMode.Fixed); // TODO:LengthMode.Remainder
+	tv.GetColumn(3).Width = new Length( 70.0, LengthMode.Fixed);
+	tv.GetColumn(4).Width = new Length( 46.0, LengthMode.Fixed);
+
+	tv.GetColumn(0).ValueTemplate = new DataTemplate(new ElementTemplateImpl(this.CreateCheckViewer));
+	tv.GetColumn(1).ValueTemplate = new DataTemplate(new ElementTemplateImpl(CreateDateViewer));
+	tv.GetColumn(2).ValueTemplate = new DataTemplate(new ElementTemplateImpl(CreateDescViewer));
+	tv.GetColumn(3).ValueTemplate = new DataTemplate(new ElementTemplateImpl(this.CreateAmountViewer));
+	tv.GetColumn(4).ValueTemplate = new DataTemplate(new ElementTemplateImpl(CreateIsNewViewer));
+
+	ScrollView sv = new ScrollView(DefaultTheme.GetResources());
+	sv.Margins = new Padding(0.0, 0.0, 0.0, -1.0);
+	sv.XAlignment = XAlign.Stretch;
+	sv.YAlignment = YAlign.Stretch;
+	sv.Content = tv;   
+
+	return sv;
+}
+
+
+// Creates the summary bar area
+private Element CreateAccountBar() {
+
+	Grid e = new Grid(1, 5);
+	
+	e.XAlignment = XAlign.Stretch;
+	e.Margins = new Padding(0.0, 0.0, 0.0, 1.0);
+	e.Height = 32.0;
+
+	e.GetCol(0).Length = new Length(LengthMode.Auto);
+	e.GetCol(1).Length = new Length(LengthMode.Auto);
+	e.GetCol(2).Length = new Length(LengthMode.Remainder);
+	e.GetCol(3).Length = new Length(LengthMode.Auto);
+	e.GetCol(4).Length = new Length(LengthMode.Auto);
+
+	e.Add(CreateBackground(0xeeeeeeff), 0, 0, 1, 5);
+	e.Add(CreateSeperator(-1.0, 0xcdcdcdff), 0, 0, 1, 5);
+	e.Add(CreateBalanceView("ActualBalance", "Actual:"), 0, 3);
+	e.Add(CreateBalanceView("ReconciledBalance", "Reconciled:"), 0, 4);
+	e.Add(CreateAccountLabel("AccountLabel"), 0, 0);
+
+	return e;
+}
+
+
+// Creates area to show actual balance
+private Element CreateBalanceView(string id, string labelText) {
+
+	StackLayout e = new StackLayout();
+	e.Orientation = Orientation.Horizontal;
+	e.YAlignment = YAlign.Center;
+	e.XAlignment = XAlign.Center;
+
+	TextArea label = new TextArea(labelText);
+	label.Margins = new Padding(4.0, 6.0, 6.0, 6.0);
+	label.Font = Font.CreateScaledFont("Arial", FontSlant.Normal, FontWeight.Bold, 12.0);
+	label.YAlignment = YAlign.Center;
+
+	TextArea value = new TextArea();
+	value.Margins = new Padding(0.0, 6.0, 6.0, 6.0);
+	value.YAlignment = YAlign.Center;
+	value.Name = id;
+
+	e.InsertBottom(label);
+	e.InsertBottom(value);
+
+	return e;
+}
+
+
+// Creates the button for new records
+private Element CreateNewRecordButton() {
+
+	Grid g = new Grid();
+
+	g.Margins = new Padding(0.0, 0.0, 0.0, 2.0);
+	g.XAlignment = XAlign.Stretch;
+	g.YAlignment = YAlign.Stretch;
+	g.Height = 24.0;
+	g.Name = "NewRecord";
+	
+	g.Add(CreateBackground(0xffffe3ff), 0, 0);
+	g.Add(CreateSeperator(-1.0, 0xcdcdcdff), 0, 0);
+	g.Add(CreateSeperator(-2.0, 0x757575ff), 0, 0);
+	g.Add(CreateRectangle("SelectNewRecord", 0xa0a0ffa0), 0, 0);
+	g.Add(CreateStaticLabel("Click here to create a new record"), 0, 0);
+
+	return g;
+}
+
+
+
+// Creates a named, initially hidden rectangle
+private Element CreateRectangle(string id, int color) {
+
+	Rectangle r = new Rectangle();
+	r.Margins = new Padding(0.0, 0.0, 0.0, -1.0);
+	r.Fill = new SolidPattern(color);
+	r.XAlignment = XAlign.Stretch;
+	r.YAlignment = YAlign.Stretch;
+	r.IsVisible = false;
+	r.Name = id;
+	return r;
+}
+
+
+// Creates the filter bar at top of this application
+private Element CreateFilterBar() {
+
+	Grid g = new Grid(1, 5);
+	g.XAlignment = XAlign.Stretch;
+	g.Margins = new Padding(0.0, 0.0, 0.0, 2.0);
+	g.Width = 0.0;
+	g.Height = 32.0;
+	
+	g.GetCol(0).Length = new Length(LengthMode.Auto);
+	g.GetCol(1).Length = new Length(LengthMode.Auto);
+	g.GetCol(2).Length = new Length(LengthMode.Auto);
+	g.GetCol(3).Length = new Length(LengthMode.Auto);
+	g.GetCol(4).Length = new Length(LengthMode.Remainder);
+
+	g.Add(CreateBackground(0xeeeeeeff),      0, 0, 1, 5);
+	g.Add(CreateSeperator(-1.0, 0xcdcdcdff), 0, 0, 1, 5);
+	g.Add(CreateSeperator(-2.0, 0x757575ff), 0, 0, 1, 5);
+	g.Add(CreateStaticLabel("Records Between"), 0, 0);
+	g.Add(CreateDatePicker("MinDateView"),   0, 1);
+	g.Add(CreateStaticLabel("and"),          0, 2);
+	g.Add(CreateDatePicker("MaxDateView"),   0, 3);
+	g.Add(CreateSearchBox("SearchInput"),    0, 4);
+
+	return g;
+}
+
+
+// Creates the search text box element
+private Element CreateSearchBox(string id) {
+
+	TextBox e = new TextBox(DefaultTheme.GetResources());
+	e.Margins = new Padding(5.0);
+	e.XAlignment = XAlign.Stretch;
+	e.YAlignment = YAlign.Stretch;
+	e.Name = id;
+	e.Watermark = "<Search>";
+
+	return e;
+}
+
+
+// Creates a new DatePicker control
+private Element CreateDatePicker(string id) {
+
+	DatePicker e = new DatePicker(DefaultTheme.GetResources());
+	e.Margins = new Padding(5.0);
+	e.YAlignment = YAlign.Stretch;
+	e.Width = 100.0;
+	e.Name = id;
+	return e;
+}
+
+
+// Creates the account label text box
+private Element CreateAccountLabel(string id) {
+
+	TextArea e = new TextArea();
+	e.Margins = new Padding(6.0);
+	e.YAlignment = YAlign.Center;
+	e.Font = Font.CreateScaledFont("Arial", FontSlant.Normal, FontWeight.Bold, 12.0);
+	e.Name = id;
+	return e;
+}
+
+
+// Creates a static label element
+private Element CreateStaticLabel(string text) {
+
+	TextArea e = new TextArea(text);
+	e.Margins = new Padding(6.0);
+	e.YAlignment = YAlign.Center;
+	return e;
+}
+
+
+
+// Creates the background for the background
+private Element CreateBackground(int color) {
+
+	Rectangle e = new Rectangle();
+	e.Fill = new SolidPattern(new Color(color));
+	e.XAlignment = XAlign.Stretch;
+	e.YAlignment = YAlign.Stretch;
+	return e;
+}
+
+
+// Creates a seperator graphic
+private Element CreateSeperator(double offset, int color) {
+
+	Rectangle r = new Rectangle();
+
+	r.Fill = new SolidPattern(new Color(color));
+	r.Margins = new Padding(0.0, 0.0, 0.0, offset);
+	r.XAlignment = XAlign.Stretch;
+	r.YAlignment = YAlign.Bottom;
+	r.Height = 1.0;
+
+	return r;
+}
+
+
+private void CreateCheckViewer(object objref, ResourceCollection res) {
+
+	DataView dv = DataView(objref);
+	CheckButton content = new CheckButton(res);
+
+	content.IsTabStop = false;
+	content.XAlignment = XAlign.Center;
+	content.YAlignment = YAlign.Center;
+	content.Margins = new Padding(3.0, 0.0, 3.0, 0.0);
+
+	dv.AddElementInternal(content);
+	dv.AddPropertySetter(content, new PropertySetterImpl(SetCheckValue));
+	
+	content.Click +@ dv.CreateEventProxy0(OnCheckButtonClicked);
+}
+
+
+private static void SetCheckValue(object elementRef, object value) {
+
+	TransactionModel t = TransactionModel(value);
+	CheckButton cb = CheckButton(elementRef);
+	cb.IsChecked = t.IsReconciled;
+}
+
+
+private static void CreateIsNewViewer(object objref, ResourceCollection res) {
+
+	DataView dv = DataView(objref);
+	TextArea content = new TextArea("New");
+
+	content.XAlignment = XAlign.Center;
+	content.YAlignment = YAlign.Center;
+	content.Foreground = new SolidPattern(0x0000ffff);
+	content.Font = Font.CreateScaledFont("Arial", FontSlant.Normal, FontWeight.Bold, 12.0);
+
+	dv.AddElementInternal(content);
+	dv.AddPropertySetter(content, new PropertySetterImpl(SetIsNewValue));
+}
+
+
+private static void SetIsNewValue(object elementRef, object value) {
+
+	TransactionModel t = TransactionModel(value);
+	TextArea content = TextArea(elementRef);
+	content.IsVisible = t.IsNew;
+}
+
+
+private static void CreateDateViewer(object objref, ResourceCollection res) {
+
+	DataView dv = DataView(objref);
+	TextArea content = new TextArea();
+
+	content.XAlignment = XAlign.Left;
+	content.YAlignment = YAlign.Center;
+	content.Margins = new Padding(3.0, 0.0, 3.0, 0.0);
+
+	dv.AddElementInternal(content);
+	dv.AddPropertySetter(content, new PropertySetterImpl(SetDateValue));
+}
+
+
+private static void SetDateValue(object elementRef, object value) {
+
+	gTextBuffer.Length = 0;
+	gTextBuffer.Append(TransactionModel(value).Date, "{MM}-{DD}-{YYYY}");
+	TextArea(elementRef).Text = gTextBuffer.Value;
+}
+
+
+private static void CreateDescViewer(object objref, ResourceCollection res) {
+
+	DataView dv = DataView(objref);
+	TextArea content = new TextArea();
+
+	content.XAlignment = XAlign.Stretch;
+	content.YAlignment = YAlign.Center;
+	content.Margins = new Padding(3.0, 0.0, 3.0, 0.0);
+
+	dv.AddElementInternal(content);
+	dv.AddPropertySetter(content, new PropertySetterImpl(SetDescViewer));
+}
+
+
+private static void SetDescViewer(object elementRef, object value) {
+
+	TransactionModel t = TransactionModel(value);
+	TextArea ta = TextArea(elementRef);
+	
+	if(t.Category.Type == CategoryType.Transfer) {
+		gTextBuffer.Length = 0;
+		gTextBuffer.Append("Transfer from ");
+		gTextBuffer.Append(t.Account.Label);
+		gTextBuffer.Append(" to ");
+		gTextBuffer.Append(t.TransferDest.Label);
+		ta.Text = gTextBuffer.Value;
+	} else {
+		ta.Text = t.Description;
+	}
+}
+
+
+private void CreateAmountViewer(object objref, ResourceCollection res) {
+
+	DataView dv = DataView(objref);
+
+	TextArea content = new TextArea();
+	content.XAlignment = XAlign.Right;
+	content.YAlignment = YAlign.Center;
+
+	dv.AddElementInternal(content);
+	dv.AddPropertySetter(content, new PropertySetterImpl(this.SetAmountValue));
+}
+
+
+private void SetAmountValue(object elementRef, object value) {
+
+	TextArea textField = TextArea(elementRef);
+	TransactionModel t = TransactionModel(value);
+	double fvalue = double(t.Amount) / 100.0;
+
+	// negate value if active account is transfer destination
+	if(t.TransferDest != null && mActiveAccount == t.Account) {
+		fvalue = -fvalue;
+	}
+
+	// display a negitive value
+	if(fvalue < 0.0) {
+		gTextBuffer.Length = 0;
+		gTextBuffer.Append("(");
+		gTextBuffer.Append(-fvalue, "0.00");
+		gTextBuffer.Append(")");
+		textField.Foreground = gNegitiveText;
+
+	// display a positive value
+	} else {
+		gTextBuffer.Length = 0;
+		gTextBuffer.Append(" ");
+		gTextBuffer.Append(fvalue, "0.00");
+		gTextBuffer.Append(" ");
+		textField.Foreground = gPositiveText;
+	}
+
+	textField.Text = gTextBuffer.Value;
+}
+
+
+public static TransactionsPage_Template() {
+	gTextBuffer = new TextBuffer();
+	gNegitiveText = new SolidPattern(0xff0000ff);
+	gPositiveText = new SolidPattern(0x000000ff);
+}
+
+
+}
+}
+

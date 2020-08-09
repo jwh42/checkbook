@@ -1,0 +1,35 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 10.17.2010] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.*;
+
+
+namespace CheckBook.Models { 
+
+
+	// @descrip Information used to filter transactions
+   internal struct FilterCriteria {
+
+
+      // @descrip Search string entered by user
+      public string SearchString;
+
+
+      // @descrip Search amount entered by user
+      public int SearchAmount;
+
+
+      // @descrip Minimum date for the transaction
+      public DateTime MinDate;
+
+      
+      // @descrip Maximum date for the transaction
+      public DateTime MaxDate;
+
+
+      // @descrip Account to filter by
+      public AccountModel Account;
+   }
+}

@@ -1,0 +1,96 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 09.26.2010] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.DateTime;
+import Krypton.Collections.List;
+
+
+namespace CheckBook.Models { 
+
+
+	// @descrip Information about a single transaction
+	internal class TransactionModel {
+
+
+		// @descrip True if this record has been reconciled with bank statements
+		public bool IsReconciled;
+		
+		
+		// @descrip True if this transaction was created this session
+		public bool IsNew;
+
+
+		// @descrip Date of the transaction
+		public DateTime Date;
+		
+		
+		// @descrip Amount of the transaction (times 100)
+		public int Amount;
+
+
+		// @descrip Description for the transaction
+		public string Description;
+
+
+		// @descrip Category for the transaction (null for transfers)
+		public CategoryModel Category;
+		
+		
+		// @descrip Account from which the transaction took place
+		public AccountModel Account;
+
+
+		// @descrip Account that transfer was deposited within
+		public AccountModel TransferDest;
+
+		
+		// @descrip Constructs a new TransactionModel instance
+		public TransactionModel() {
+			Date = DateTime.LocalDate;
+		}
+
+
+		// @descrip Adds a set of transactions to their respective accounts
+		// @param accounts List of accounts to calculate the balance of
+		// @param transactions Transactions to calculate balances from
+		public static void AddToAccounts(List transactions) {
+			for(int i = transactions.Count - 1; i >= 0; i--) {
+				TransactionModel t = TransactionModel(transactions[i]);
+				t.AddToTargetAccounts();
+			}
+		}
+		
+
+		// @descrip Removes this transaction from target accounts      
+		public void SubtractFromTargetAccounts() {
+			AddToTargetAccounts(-1);
+		}
+
+
+		// @descrip Adds this transaction to target accounts
+		public void AddToTargetAccounts() {
+			AddToTargetAccounts(1);
+		}
+		
+		
+		// Adds this transaction to target accounts
+		private void AddToTargetAccounts(int sign) {
+			if(Category.Type == CategoryType.Transfer) {
+				AddSelfToAccount(Account, -sign);
+				AddSelfToAccount(TransferDest, sign);
+			} else {
+				AddSelfToAccount(Account, sign);
+			}
+		}
+		
+
+		// Adds an amount to a particular account
+		private void AddSelfToAccount(AccountModel account, int sign) {
+			if(account != null) {
+				account.AddTransaction(sign*Amount, IsReconciled);
+			}
+		}
+	}
+}

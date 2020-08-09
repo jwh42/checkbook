@@ -1,0 +1,319 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 08.11.2008] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.EventHandler0;
+import Krypton.Collections.List;
+import Krypton.System.*;
+import Krypton.Graphics.*;
+import Krypton.Graphics.Shapes.*;
+import Krypton.Graphics.Patterns.*;
+import Krypton.UI.*;
+import Krypton.UI.Layouts.*;
+import Krypton.UI.Controls.*;
+import CheckBook.Pages.*;
+import CheckBook.Models.*;
+
+
+namespace CheckBook { 
+
+
+// @descrip Bootstrap code for the CheckBook application
+internal class CheckBookApp extends Component {
+
+
+// Tab Titles
+private const string TabTransact = "Transactions";
+private const string TabSummaries = "Summaries";
+private const string TabAccounts = "Accounts";
+private const string TabAutoTrans = "Auto Transactions";
+
+
+// Internal References
+private EventLoopID mLoopID;
+private Grid mRootElement;
+private TransactionsPage mPageTransact;
+private SummariesPage mPageSummaries;
+private AccountsPage mPageAccounts;
+private AutoTransactPage mPageAutoTrans;
+private MessageBox mMessageBox;
+
+
+// Internal Data Structures
+private List mAllRecords;
+private List mCategories;
+private List mAccounts;
+private List mDataFiles;
+
+
+// @descrip Loops until window is closed
+public void Execute() {
+	mLoopID = Dispatcher.CreateEventLoop();
+	Dispatcher.RunEventLoop(mLoopID);
+	Dispatcher.ReleaseEventLoop(mLoopID);
+	ModelWriter.WriteTransactions(mAllRecords);
+}
+
+
+// @seeSuperClass
+public override bool OnSuggestClose() {
+	Dispatcher.StopEventLoop(mLoopID);
+	return true;
+}
+
+
+// User clicked on the 'Automatic Transactions' button
+private void OnAutomaticTransactClicked(object sender) {
+	ShowPage(mPageAutoTrans);
+}
+
+
+// User clicked on the 'Monthly Expences' button
+private void OnMonthlyExpencesClicked(object sender) {
+	ShowPage(mPageSummaries);
+}
+
+
+// User clicked on the 'Account Balances' button
+private void OnAccountBalancesClicked(object sender) {
+	ShowPage(mPageAccounts);
+}
+
+
+// User clicked on one of the account transaction buttons
+private void OnAccountTransactClicked(object sender) {
+	Element btn = Element(sender);
+	ShowAccount(btn.Name);
+}
+
+
+// Displays transactions for a particular account
+private void ShowAccount(string id) {
+	mPageTransact.SetActiveAccount(id);
+	ShowPage(mPageTransact);
+}
+
+
+// Displays a particular page to the user
+private void ShowPage(Element e) {
+	mPageTransact.IsVisible = (e == mPageTransact);
+	mPageSummaries.IsVisible = (e == mPageSummaries);
+	mPageAccounts.IsVisible = (e == mPageAccounts);
+	mPageAutoTrans.IsVisible = (e == mPageAutoTrans);
+}
+
+
+// Sets size of a component to Stretch
+private void StretchComponent(Component c) {
+	c.XAlignment = XAlign.Stretch;
+	c.YAlignment = YAlign.Stretch;
+}
+
+
+// Activates one of the menu items
+private void ActivateMenuItem(string id) {
+	RadioButton b = GetSafeChild(id);
+	if(b != null) {
+		b.IsChecked = true;
+	}
+}
+
+
+// Creates the main application menu
+private Element CreateMenu(List accounts) {
+
+	ResourceCollection r = new ResourceCollection();
+	StackLayout e = new StackLayout();
+	
+	r.SetResource(
+		"RadioButton",
+		new ControlTemplate(
+			new ElementTemplateImpl(CategoryButtonTheme.Create),
+			CategoryButtonTheme.States()
+		)
+	);
+
+	/*
+	e.InsertBottom(
+		CreateMenuButton(
+			r,
+			OnAccountBalancesClicked,
+			"AccountBalancesTab",
+			"Account Balances"
+		)
+	);
+
+	e.InsertBottom(
+		CreateMenuButton(
+			r,
+			OnMonthlyExpencesClicked,
+			"MonthlyExpencesTab",
+			"Monthly Expences"
+		)
+	);
+
+	e.InsertBottom(
+		CreateMenuButton(
+			r,
+			OnAutomaticTransactClicked,
+			"AutomaticTransactTab",
+			"Automatic Transactions"
+		)
+	);
+
+	e.InsertBottom(CreateSpacer());
+	*/
+
+	for(int i = 0; i < accounts.Count; i++) {
+		AccountModel a = AccountModel(accounts[i]);
+		e.InsertBottom(
+			CreateMenuButton(
+				r,
+				OnAccountTransactClicked,
+				a.ID,
+				a.Label
+			)
+		);
+	}
+
+	return e;
+}
+
+
+// Creates a button to use in the left hand side menu
+private RadioButton CreateMenuButton(
+	ResourceCollection r,
+	EventHandler0 handler,
+	string id,
+	string label) {
+
+	RadioButton b = new RadioButton(r);
+	b.Margins = new Padding(5.0, 5.0, -1.0, 0.0);
+	b.XAlignment = XAlign.Stretch;
+	b.Content = label;
+	b.Name = id;
+	b.Group = "MenuButtons";
+	b.Click += handler;
+
+	return b;
+}
+
+
+// Creates a spacer for the main menu
+private Element CreateSpacer() {
+	Canvas c = new Canvas();
+	c.Height = 10.0;
+	return c;
+}
+
+
+// Creates a vertical divider
+private Element CreateDivider() {
+
+	Layout e = new Layout();
+	e.Margins = new Padding(0.0, -1.0, 0.0, -1.0);
+	e.XAlignment = XAlign.Stretch;
+	e.YAlignment = YAlign.Stretch;
+
+	Rectangle r1 = new Rectangle();
+	r1.Fill = new SolidPattern(0x757575ff);
+	r1.XAlignment = XAlign.Stretch;
+	r1.YAlignment = YAlign.Stretch;
+
+	Rectangle r2 = new Rectangle();
+	r2.Fill = new SolidPattern(0xeeeeeeff);
+	r2.Stroke = new SolidPattern(0xcdcdcdff);
+	r2.StrokeWidth = 1.0;
+	r2.Margins = new Padding(1.0);
+	r2.XAlignment = XAlign.Stretch;
+	r2.YAlignment = YAlign.Stretch;
+	
+	e.InsertTop(r1);
+	e.InsertTop(r2);
+	
+	return e;
+}
+
+
+// Creates the background element
+private Element CreateBkgnd() {
+	Rectangle r = new Rectangle();
+	r.Margins = new Padding(-2.0);
+	r.Fill = new SolidPattern(0xeeeeeeff);
+	r.Stroke = new SolidPattern(0x0000ffff);
+	r.XAlignment = XAlign.Stretch;
+	r.YAlignment = YAlign.Stretch;
+	return r;
+}
+
+
+// @descrip Constructs a new checkbook application
+public CheckBookApp() {
+
+	// setup the external grid
+	mRootElement = new Grid(1, 3);
+	mRootElement.Margins = new Padding(7.0);
+	mRootElement.XAlignment = XAlign.Stretch;
+	mRootElement.YAlignment = YAlign.Stretch;
+	mRootElement.GetCol(0).Length = new Length(LengthMode.Auto);
+	mRootElement.GetCol(1).Length = new Length(5.0);
+	mRootElement.GetCol(2).Length = new Length(LengthMode.Remainder);
+
+	// read settings & data
+	mCategories = ModelReader.LoadCategories();
+	mAccounts = ModelReader.LoadAccounts();
+	mDataFiles = ModelReader.GetTransactionFileList();
+	mAllRecords = ModelReader.LoadTransactions(mDataFiles, mAccounts, mCategories);
+	
+	// calculate balances for all accounts
+	AccountModel.ClearBalances(mAccounts);
+	TransactionModel.AddToAccounts(mAllRecords);
+
+	// create internal components
+	mMessageBox = new MessageBox();
+	mPageTransact = new TransactionsPage();
+	mPageAccounts = new AccountsPage();
+	mPageSummaries = new SummariesPage();
+	mPageAutoTrans = new AutoTransactPage();
+
+	// setup component sizes
+	StretchComponent(mPageTransact);
+	StretchComponent(mPageAccounts);
+	StretchComponent(mPageSummaries);
+	StretchComponent(mPageAutoTrans);
+
+	// bind data to internal components
+	mPageTransact.SetMessageBox(mMessageBox);
+	mPageTransact.SetCategories(mCategories);
+	mPageTransact.SetAccounts(mAccounts);
+	mPageTransact.SetTransactions(mAllRecords);
+
+	// add elements into main grid
+	mRootElement.Add(CreateBkgnd(), 0, 0, 1, 3);
+	mRootElement.Add(CreateMenu(mAccounts), 0, 0);
+	mRootElement.Add(mPageTransact, 0, 2);
+	mRootElement.Add(mPageAccounts, 0, 2);
+	mRootElement.Add(mPageSummaries, 0, 2);
+	mRootElement.Add(mPageAutoTrans, 0, 2);
+	mRootElement.Add(CreateDivider(), 0, 1);
+
+	// insert contents
+	InsertElementAtTop(mRootElement);
+	InsertElementAtTop(mMessageBox);
+	
+	// set active page
+	if(mAccounts.Count > 0) {
+		string id = AccountModel(mAccounts[0]).ID;
+		ShowAccount(id);
+		ActivateMenuItem(id);
+	} else {
+		ShowPage(mPageSummaries);
+		ActivateMenuItem("AccountBalancesTab");
+	}
+}
+
+
+}
+}
+

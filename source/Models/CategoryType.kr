@@ -1,0 +1,29 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 10.17.2010] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+namespace CheckBook.Models { 
+
+	// @descrip List of category types
+   internal enum CategoryType {
+   
+
+      // @descrip Category is used for transfers
+      Transfer,
+
+
+      // @descrip Special transaction that does not count
+      //    towards general operating expences nor is it
+      //    a typical income
+      Special,
+
+
+      // @descrip Category is generally used for expences
+      Expence,
+
+      
+      // @descrip Category is generally used for income
+      Income
+   }
+}

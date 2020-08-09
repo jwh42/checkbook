@@ -1,0 +1,20 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 10.17.2010] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+namespace CheckBook.Models { 
+
+
+	// @descrip Information about a transaction file
+	internal class TransactionFileModel {
+
+
+		// @descrip True if this file was modified
+		public bool IsModified;
+
+
+		// @descrip Name of the transaction file
+		public string ID;
+	}
+}

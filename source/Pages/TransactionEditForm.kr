@@ -1,0 +1,323 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 10.28.2010] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.*;
+import Krypton.Text.*;
+import Krypton.Collections.*;
+import Krypton.Graphics.*;
+import Krypton.Graphics.Patterns.*;
+import Krypton.UI.Controls.*;
+import CheckBook.Models.*;
+
+
+namespace CheckBook.Pages { 
+
+
+// Form used to edit a transaction
+public class TransactionEditForm extends TransactionEditForm_Template {
+
+
+// Internal Values
+private Button mBtnCommit;
+private Button mBtnCancel;
+private Button mBtnDelete;
+private TextBox mTxtDescrip;
+private TextBox mTxtAmount;
+private TextArea mLabelDescrip;
+private TextArea mLabelCategory;
+private DatePicker mDatePicker;
+private ComboBox mListCategory;
+private ComboBox mListAcctDst;
+private List mCategories;
+private List mAccounts;
+
+
+// @descrip User clicked on the commit button
+// @param sender Object that sent the event
+public event CommitClicked(TransactionEditForm sender);
+
+
+// @descrip User clicked on the cancel button
+// @param sender Object that sent the event
+public event CancelClicked(TransactionEditForm sender);
+
+
+// @descrip User clicked on the delete button
+// @param sender Object that sent the event
+public event DeleteClicked(TransactionEditForm sender);
+
+
+// User clicked on the close button
+private void OnCommitClicked(object sender) {
+	CommitClicked(this);
+}
+
+
+// User clicked on the cancel button
+private void OnCancelClicked(object sender) {
+	CancelClicked(this);
+}
+
+
+// User clicked on the delete button
+private void OnDeleteClicked(object sender) {
+	DeleteClicked(this);
+}
+
+
+// @descrip Creates a new transaction based on selected settings
+// @returns New transaction instance
+// @param a Account the transaction will belong to
+public TransactionModel CreateNewTransaction(AccountModel account) {
+
+	TransactionModel t = new TransactionModel();
+
+	t.IsNew = true;
+	t.Account = account;
+
+	UpdateTransaction(t);
+
+	if(t.Category.Type == CategoryType.Transfer) {
+		t.TransferDest = GetAccountModel(mListAcctDst, mAccounts);
+	} else {
+		t.TransferDest = null;
+	}
+	
+	return t;
+}
+
+
+// @descrip Updates an existing transaction
+// @param m @see(TransactionModel) to update
+public void UpdateTransaction(TransactionModel t) {
+
+	double amount;
+
+	// get date and category for the record
+	t.Date = mDatePicker.SelectedValue;
+	t.Category = GetCategoryModel(mListCategory, mCategories);
+
+	// attempt to parse the amount field; be
+	// sure to use absolute value for transfers
+	if(Double.TryParse(mTxtAmount.Text, out amount)) {
+		t.Amount = DoubleToFixedInt(amount);
+	}
+
+	// store description and make sure amount
+	// is positive if record is a transfer
+	if(t.Category.Type != CategoryType.Transfer) {
+		t.Description = String.Copy(mTxtDescrip.Text);
+	} else {
+		t.Amount = Math.Abs(t.Amount);
+		t.Description = null;
+	}
+}
+
+
+
+// Converts a floating point value into a fixed point integer
+private static int DoubleToFixedInt(double x) {
+	if(x < 0.0) {
+		return int(100.0*x - 0.001);
+	} else {
+		return int(100.0*x + 0.001);
+	}
+}
+
+
+// Obtains currently selected account in a @see(ComboBox)
+private static AccountModel GetAccountModel(ComboBox input, List accounts) {
+	if(input.SelectedItems.Count > 0) {
+		object item = input.SelectedItems[0];
+		int index = input.DataSource.IndexOf(item);
+		return accounts[index];
+	} else {
+		Console.WriteLine("** warning: no account was selected **");
+		return null;
+	}
+}
+
+
+// Obtains currently selected category in a @see(ComboBox)
+private static CategoryModel GetCategoryModel(ComboBox input, List categories) {
+	if(input.SelectedItems.Count > 0) {
+		object item = input.SelectedItems[0];
+		int index = input.DataSource.IndexOf(item);
+		return categories[index];
+	} else {
+		Console.WriteLine("** warning: no category was selected **");
+		return null;
+	}
+}
+
+
+// User changed the currently selected category
+private void OnCategorySelectionChanged(IReadableList sender, int start, int count) {
+	
+	if(mListCategory.SelectedItems.Count > 0) {
+
+		object selectedValue = mListCategory.SelectedItems[0];
+		int categoryIndex = mListCategory.DataSource.IndexOf(selectedValue);
+
+		mTxtDescrip.IsVisible = (categoryIndex != 0);
+
+		mListAcctDst.IsVisible = (categoryIndex == 0);
+		mListAcctDst.SelectedItems.Clear();
+	}
+}
+
+
+// @descrip Displays a new transaction to the user
+// @returns Transaction model that was created
+public TransactionModel ShowNewTransaction() {
+	TransactionModel t = new TransactionModel();
+	SetTransaction(t, false);
+	return t;
+}
+
+
+// @descrip Displays an existing transaction to the user
+// @param t Transaction to display to the user
+public void ShowExistingTransaction(TransactionModel t) {
+	SetTransaction(t, true);
+}
+
+
+// Displays a transaction to the user
+private void SetTransaction(TransactionModel t, bool showDelete) {
+
+	TextBuffer tb = new TextBuffer();
+	tb.Append(double(t.Amount)/100.0, "0.00");
+	
+	int categoryIndex = GetCategoryIndex(t.Category);
+
+	mTxtAmount.Text = tb.Value;
+	mTxtDescrip.Text = t.Description;
+	mDatePicker.SelectedValue = t.Date;
+	
+	SelectCategory(mListCategory, categoryIndex);
+	SelectItemInList(mListAcctDst, GetAccountIndex(t.TransferDest));
+
+	mListAcctDst.IsVisible = false;
+	mListCategory.IsVisible = (categoryIndex != 0);
+	mTxtDescrip.IsVisible = (categoryIndex != 0);
+	mLabelDescrip.IsVisible = (categoryIndex != 0);
+	mLabelCategory.IsVisible = (categoryIndex != 0);
+
+	mBtnDelete.IsVisible = showDelete;
+
+	mTxtAmount.SelectAll();
+ 
+	delete tb;
+}
+
+
+// Selects an item from the category list
+private static void SelectCategory(ComboBox list, int index) {
+	if(index < 0 && list.DataSource.Count >= 2) {
+		SelectItemInList(list, 1);
+	} else {
+		SelectItemInList(list, index);
+	}
+}
+
+
+// Selects a particular item in a @see(ComboBox)
+private static void SelectItemInList(ComboBox list, int index) {
+	
+	list.SelectedItems.Clear();
+
+	if(index >= 0) {
+		object item = list.DataSource[index];
+		list.SelectedItems.Add(item);
+	}
+}
+
+
+// Gets the index of a category in the main category list
+private static int GetCategoryIndex(CategoryModel category) {
+	if(category != null) {
+		return category.Index;
+	} else {
+		return -1;
+	}
+}
+
+
+// Gets the index of an account in the main account list
+private static int GetAccountIndex(AccountModel account) {
+	if(account != null) {
+		return account.Index;
+	} else {
+		return -1;
+	}
+}
+
+
+// @descrip Sets the categories to show to the user
+// @param categories List of CategoryModel instances
+public void SetCategories(List categories) {
+
+	List labels = new List();
+	
+	for(int i = 0; i < categories.Count; i++) {
+		CategoryModel m = CategoryModel(categories[i]);
+		labels.Add(m.Label);
+	}
+
+	mListCategory.DataSource = labels; 
+
+	mCategories = categories;
+}
+
+
+// @descrip Sets the accounts to show to the user
+// @param accounts List of AccountModel instances
+public void SetAccounts(List accounts) {
+
+	List labels = new List();
+	
+	for(int i = 0; i < accounts.Count; i++) {
+		AccountModel m = AccountModel(accounts[i]);
+		labels.Add(m.Label);
+	}
+
+	mListAcctDst.DataSource = labels; 
+
+	mAccounts = accounts;
+}
+
+
+// @descrip Constructs a new summary page
+public TransactionEditForm() {
+
+	CreateTemplateContent();
+
+	mBtnCommit = Button(GetSafeChild("Commit"));
+	mBtnCancel = Button(GetSafeChild("Cancel"));
+	mBtnDelete = Button(GetSafeChild("Delete"));
+	mDatePicker = DatePicker(GetSafeChild("Date"));
+	mTxtAmount = TextBox(GetSafeChild("Amount"));
+	mTxtDescrip = TextBox(GetSafeChild("Description"));
+	mListCategory = ComboBox(GetSafeChild("Category"));
+	mListAcctDst = ComboBox(GetSafeChild("AccountDst"));
+	mLabelDescrip = TextArea(GetSafeChild("LabelDescrip"));
+	mLabelCategory = TextArea(GetSafeChild("LabelCategory"));
+
+	mBtnCommit.Click +@ OnCommitClicked;
+	mBtnCancel.Click +@ OnCancelClicked;
+	mBtnDelete.Click +@ OnDeleteClicked;
+
+	mListCategory.SelectedItems.ItemsInserted +@ OnCategorySelectionChanged;
+	mListCategory.SelectedItems.ItemsRemoved +@ OnCategorySelectionChanged;
+	mListCategory.SelectedItems.ItemsUpdated +@ OnCategorySelectionChanged;
+	
+	mListAcctDst.IsVisible = false;
+}
+
+
+}
+}
+

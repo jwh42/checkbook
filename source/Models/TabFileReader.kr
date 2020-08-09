@@ -1,0 +1,102 @@
+//----------------------------------------------------------------------//
+// CheckBook                                       [created 10.17.2010] //
+// Copyright (c) 2011 - Justin Hoffman                                  //
+//----------------------------------------------------------------------//
+
+import Krypton.*;
+import Krypton.IO.*;
+import Krypton.Text.*;
+
+
+namespace CheckBook.Models { 
+
+
+// @descrip Reads contents of an ASCII tab/newline delimited file
+internal class TabFileReader {
+
+
+// Internal Values
+private byte[] mData;
+private int mPos;
+
+
+// @descrip Moves to the next record in the file
+// @returns True if another record exists, false if at end of file
+public bool MoveToNextRecord() {
+	while(mPos < mData.Length && !IsEndOfLine(mData[mPos])) mPos++;
+	while(mPos < mData.Length &&  IsEndOfLine(mData[mPos])) mPos++;
+	return (mPos < mData.Length);
+}
+
+
+// @descrip Reads the next field in the current record
+// @returns Reference to @p(tb)
+// @param tb Text buffer to add content into
+public TextBuffer GetNextField(TextBuffer tb) {
+
+	// clear the string buffer
+	tb.Length = 0;
+
+	// read up to first delimiter character
+	while(mPos < mData.Length && IsNotDelimiter(mData[mPos])) {
+		tb.Append(char(mData[mPos]));
+		mPos++;
+	}
+
+	// skip over field delimiter character
+	if(mPos < mData.Length && IsEndOfField(mData[mPos])) {
+		mPos++;
+	}
+	
+	// return reference to string buffer
+	return tb;
+}
+
+
+// @descrip Determines whether a character is part of an end of line sequence
+private static bool IsEndOfLine(byte b) {
+	return (b == '\r' || b == '\n');
+}
+
+
+// Determines whether a character indicates the end of a field
+private static bool IsEndOfField(byte b) {
+	return (b == '\t');
+}
+
+
+// @descrip Determines whether a byte is a delimiter char
+private static bool IsNotDelimiter(byte b) {
+	return (b != '\t' && b != '\r' && b != '\n');
+}
+
+
+// @descrip Opens a file for reading
+public static TabFileReader Open(string fileName) {
+
+	TabFileReader reader = new TabFileReader();
+
+	File f = File.Open(fileName, FileAccess.Read);
+
+	int len = f.GetLength();
+	reader.mData = new byte[len];
+	f.Read(reader.mData, 0, len);
+	f.Close();
+	
+	return reader;
+}
+
+
+// @descrip Cleans up after a @see(TabFileReader)
+public ~TabFileReader() {
+	delete mData;
+}
+
+
+// @descrip Prevent direct instansiation
+private TabFileReader() {
+}
+
+
+}
+}
