@@ -1,0 +1,8 @@
+*.kr.c
+*.kr.o
+*.kr.h.c
+*.kr.h.o
+
+deps.krdata
+module.krlink
+build/CheckBook.exe
