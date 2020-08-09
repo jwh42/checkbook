@@ -1,2 +1,2 @@
 c	date	amount	category	account	description
-1	01-01-2020	100	otherinc	acct_01	Account Start Balance
+1	01-01-2020	100	otherinc	account_sav_01	Account Start Balance
