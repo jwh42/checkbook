@@ -1,28 +1,25 @@
 //----------------------------------------------------------------------//
 // CheckBook                                       [created 10.17.2010] //
-// Copyright (c) 2011 - Justin Hoffman                                  //
+// Copyright (c) 2020 - Justin Hoffman                                  //
 //----------------------------------------------------------------------//
 
 namespace CheckBook.Models { 
 
 
-	// @descrip Information about a transaction category
+	// @summary Information about a transaction category
 	internal class CategoryModel {
 
 
-		// @descrip Type of this category
+		// @summary Type of this category
 		public CategoryType Type;
-
 		
-		// @descrip Identifyer for this category
+		// @summary Identifier for this category
 		public string ID;
 
-
-		// @descrip Label to show the user
+		// @summary Label to show the user
 		public string Label;
 
-
-		// @descrip Index of this category
+		// @summary Index of this category
 		public int Index;
 	}
 }

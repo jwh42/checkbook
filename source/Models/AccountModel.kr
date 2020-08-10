@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------//
 // CheckBook                                       [created 10.17.2010] //
-// Copyright (c) 2011 - Justin Hoffman                                  //
+// Copyright (c) 2020 - Justin Hoffman                                  //
 //----------------------------------------------------------------------//
 
 import Krypton.Collections.List;
@@ -9,31 +9,30 @@ import Krypton.Collections.List;
 namespace CheckBook.Models { 
 
 
-	// @descrip Information about a single account
+	// @summary Information about a single account
 	internal class AccountModel {
 
 
-		// @descrip Identifyer for this account
+		// @summary True if hidden, false if visible
+		public bool IsHidden;
+
+		// @summary Identifier for this account
 		public string ID;
 
-
-		// @descrip Label to show user for this account
+		// @summary Label to show user for this account
 		public string Label;
 
-
-		// @descrip Index of this account
+		// @summary Index of this account
 		public int Index;
 
-
-		// @descrip Balance according to the last reconciliation
+		// @summary Balance according to the last reconciliation
 		public int ReconciledBalance;
 
-		
-		// @descrip Current supposed balance of the account
+		// @summary Current supposed balance of the account
 		public int ActualBalance;
 
 
-		// @descrip Adds a transaction to this account
+		// @summary Adds a transaction to this account
 		// @param amount Amount of the transaction
 		// @param isReconciled True if transaction is reconciled, false if not
 		public void AddTransaction(int amount, bool isReconciled) {
@@ -44,7 +43,7 @@ namespace CheckBook.Models {
 		}      
 
 
-		// @descrip Clears the balances in a set of accounts
+		// @summary Clears the balances in a set of accounts
 		// @param accounts List of accounts to clear the balances of
 		public static void ClearBalances(List accounts) {
 			for(int i = 0; i < accounts.Count; i++) {
