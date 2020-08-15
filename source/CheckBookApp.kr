@@ -210,7 +210,7 @@ namespace CheckBook {
 					r,
 					OnMonthlyExpencesClicked,
 					"MonthlyExpencesTab",
-					"Monthly Expences"
+					"Monthly Expenses"
 				)
 			);
 

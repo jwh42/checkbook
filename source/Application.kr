@@ -34,7 +34,9 @@ public static int Main(string[] args) {
 		c,
 		null,
 		WindowType.Window,
-		WindowFlag.Normal
+		WindowFlag.Normal,
+		100,
+		100
 	);
 	
 	w.Caption = "CheckBook";
