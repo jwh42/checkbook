@@ -347,10 +347,16 @@ private static bool MatchesSearch(TransactionModel t, inout FilterCriteria f) {
 public TransactionsPage() {
 
 	DateTime today = DateTime.LocalDate;
-	int      date = DateTime.GetDaysInMonth(today.Year, today.Month);
-	DateTime moStart = new DateTime(today.Year, today.Month, 1);
-	DateTime maxDate = new DateTime(today.Year, today.Month, date);
-	DateTime minDate = moStart.AddMonths(-2);
+	DateTime thisMonth = new DateTime(today.Year, today.Month, 1);
+	DateTime nextMonth = thisMonth.AddMonths(1);
+	DateTime minDate = thisMonth.AddMonths(-2);
+
+	DateTime maxDate =
+		new DateTime(
+			nextMonth.Year,
+			nextMonth.Month,
+			DateTime.GetDaysInMonth(nextMonth.Year, nextMonth.Month)
+		);
 
 	mEditForm = new TransactionEditForm();
 
