@@ -1,0 +1,4 @@
+c	date	amount	category	account	description
+1	12-01-2026	100	otherinc	account_sav_01	Account Start Balance
+0	12-09-2026	50	transfer	account_sav_01	account_hid_03
+0	12-31-2026	560	groceries	account_sav_01	Test1bcdefg

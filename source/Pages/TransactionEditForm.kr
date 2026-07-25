@@ -196,7 +196,7 @@ private void SetTransaction(TransactionModel t, bool showDelete) {
 	mTxtAmount.Text = tb.Value;
 	mTxtDescrip.Text = t.Description;
 	mDatePicker.SelectedValue = t.Date;
-	
+
 	SelectCategory(mListCategory, categoryIndex);
 	SelectItemInList(mListAcctDst, GetAccountIndex(t.TransferDest));
 
@@ -209,8 +209,35 @@ private void SetTransaction(TransactionModel t, bool showDelete) {
 	mBtnDelete.IsVisible = showDelete;
 
 	mTxtAmount.SelectAll();
- 
-	delete tb;
+
+  // 2025-12-31:
+  //   The following set of steps was causing an issue:
+  //   - Create a record, close CheckBook
+  //   - Open CheckBook, click on record that was created
+  //   - Click empty area in "Description" text box
+  //   - Modify description of the record (add text to end)
+  //   - Observe: Amount is set to "0.00"
+  //
+  //   Observations:
+  //   - Clicking into the "amount" input box would prevent the issue
+  //   - Moving window after opening CheckBook may-or-may-not prevent the issue
+  //
+  //   Root-cause notes:
+  //   - In `UpdateTransaction` the value of `mTxtAmount.Text` was `""`
+  //   - Looking at `TextBox.Text` => `TextArea.Text`, it was observed that
+  //     `TextArea.SetValue` -> `TextArea.CopyValue` ->
+  //     `TextArea.CopyValidValue` was directly saving a reference to the input
+  //     string (`mCached = newval`)
+  //   - Calling `delete tb` below is freeing the object that `mCached`/`newval`
+  //     would point to, causing `TextBox.Text` to return `""` if the user has
+  //     not interacted with the "amount" input text box
+  //
+  //   Future changes:
+  //   - Fix `Double.TryParse` so that `Double.TryParse("")` return `false`
+  //   - Fix `TextArea.CopyValidValue` to set `mCached = null` instead of
+  //     referencing `newval`
+
+	//delete tb;
 }
 
 

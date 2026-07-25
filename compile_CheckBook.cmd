@@ -1,6 +1,6 @@
 @echo off
 
-REM varibles
+REM variables
 	SET KRFLAGS=-optimize
 	REM SET KRFLAGS=
 	SET EXENAME=CheckBook
