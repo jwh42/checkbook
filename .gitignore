@@ -2,6 +2,7 @@
 *.kr.o
 *.kr.h.c
 *.kr.h.o
+*-intermediate-c.zip
 
 deps.krdata
 module.krlink
